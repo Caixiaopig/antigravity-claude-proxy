@@ -6,6 +6,7 @@
 import app from './server.js';
 import { DEFAULT_PORT } from './constants.js';
 import { logger } from './utils/logger.js';
+import { printAuthStatus } from './auth/api-key-middleware.js';
 import path from 'path';
 import os from 'os';
 
@@ -42,7 +43,7 @@ app.listen(PORT, () => {
     // align for 2-space indent (60 chars), align4 for 4-space indent (58 chars)
     const align = (text) => text + ' '.repeat(Math.max(0, 60 - text.length));
     const align4 = (text) => text + ' '.repeat(Math.max(0, 58 - text.length));
-    
+
     // Build Control section dynamically
     let controlSection = '║  Control:                                                    ║\n';
     if (!isDebug) {
@@ -99,8 +100,9 @@ ${border}    ${align4(`export ANTHROPIC_BASE_URL=http://localhost:${PORT}`)}${bo
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
   `);
-    
+
     logger.success(`Server started successfully on port ${PORT}`);
+    printAuthStatus();  // Display API Key auth status
     if (isDebug) {
         logger.warn('Running in DEBUG mode - verbose logs enabled');
     }

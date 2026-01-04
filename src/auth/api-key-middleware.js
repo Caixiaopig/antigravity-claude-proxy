@@ -108,7 +108,26 @@ export function getAuthStatus() {
     };
 }
 
+/**
+ * Print API Key auth status to console (call after server starts)
+ * Minimal integration point for index.js
+ */
+export function printAuthStatus() {
+    const status = getAuthStatus();
+
+    if (status.isDisabled) {
+        console.log('  ⚠️  API Key Auth: DISABLED (dev mode)');
+    } else if (status.enabled) {
+        console.log(`  ✅ API Key Auth: ${status.keyCount} active key(s)`);
+    } else {
+        console.log('  ⚠️  API Key Auth: No keys configured!');
+        console.log('      Run: npm run api-keys:add');
+    }
+    console.log('');
+}
+
 export default {
     apiKeyMiddleware,
-    getAuthStatus
+    getAuthStatus,
+    printAuthStatus
 };
