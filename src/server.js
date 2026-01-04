@@ -8,6 +8,7 @@ import express from 'express';
 import cors from 'cors';
 import { sendMessage, sendMessageStream, listModels, getModelQuotas } from './cloudcode/index.js';
 import { forceRefresh } from './auth/token-extractor.js';
+import { apiKeyMiddleware, getAuthStatus } from './auth/api-key-middleware.js';
 import { REQUEST_BODY_LIMIT } from './constants.js';
 import { AccountManager } from './account-manager/index.js';
 import { formatDuration } from './utils/helpers.js';
@@ -56,6 +57,7 @@ async function ensureInitialized() {
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
+app.use(apiKeyMiddleware);  // API Key authentication
 
 /**
  * Parse error message to extract error type, status code, and user-friendly message
@@ -107,7 +109,7 @@ app.use((req, res, next) => {
     // Skip logging for event logging batch unless in debug mode
     if (req.path === '/api/event_logging/batch') {
         if (logger.isDebugEnabled) {
-             logger.debug(`[${req.method}] ${req.path}`);
+            logger.debug(`[${req.method}] ${req.path}`);
         }
     } else {
         logger.info(`[${req.method}] ${req.path}`);
@@ -123,11 +125,11 @@ app.get('/health', async (req, res) => {
     try {
         await ensureInitialized();
         const start = Date.now();
-        
+
         // Get high-level status first
         const status = accountManager.getStatus();
         const allAccounts = accountManager.getAllAccounts();
-        
+
         // Fetch quotas for each account in parallel to get detailed model info
         const accountDetails = await Promise.allSettled(
             allAccounts.map(async (account) => {
