@@ -4,6 +4,10 @@
  * Express middleware that validates API keys for protected endpoints.
  * Public endpoints (like /health) are skipped.
  *
+ * Supported header formats:
+ *   - x-api-key: sk-ant-xxx
+ *   - Authorization: Bearer sk-ant-xxx
+ *
  * Environment variable SKIP_API_KEY_AUTH=true disables authentication
  * (for development only).
  */
@@ -48,14 +52,25 @@ export function apiKeyMiddleware(req, res, next) {
         });
     }
 
-    // Get API key from header
-    const apiKey = req.headers['x-api-key'];
+    // Get API key from header (support multiple formats)
+    // Priority: x-api-key > Authorization: Bearer > Authorization
+    const xApiKey = req.headers['x-api-key'];
+    const authHeader = req.headers['authorization'];
+
+    let apiKey = xApiKey;
+
+    // If no x-api-key, try Authorization: Bearer header
+    if (!apiKey && authHeader) {
+        if (authHeader.startsWith('Bearer ')) {
+            apiKey = authHeader.substring(7);  // Remove 'Bearer ' prefix
+        }
+    }
 
     if (!apiKey) {
         return res.status(401).json({
             error: {
                 type: 'authentication_error',
-                message: 'Missing API key. Please provide x-api-key header.'
+                message: 'Missing API key. Please provide x-api-key or Authorization header.'
             }
         });
     }
